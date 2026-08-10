@@ -1,0 +1,22 @@
+{
+	"name": "@damirlut/debugger-dump",
+	"version": "0.0.1",
+	"description": "GameMaker IDE plugin for exporting profiling data to CSV and JSON",
+	"author": "DamirLut",
+	"license": "MIT",
+	"files": [
+		"DebuggerDump.dll",
+		"DebuggerDump.gmplugin",
+		"README.md"
+	],
+	"scripts": {
+		"prepack": "xcopy /y /q ..\\dist\\* .\\",
+		"postpack": "del /q DebuggerDump.dll DebuggerDump.gmplugin 2>nul"
+	},
+	"gm": {
+		"destination": "damirlut/debugger-dump",
+		"displayName": "Debugger Dump",
+		"shortDescription": "GameMaker IDE plugin for exporting profiling data to CSV and JSON"
+	},
+	"_id": "@damirlut/debugger-dump@0.0.1"
+}

@@ -1,0 +1,122 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<AssemblyName>DebuggerDump</AssemblyName>
+		<RootNamespace>DamirLut.DebuggerDump</RootNamespace>
+		<TargetFramework>net8.0</TargetFramework>
+		<LangVersion>latest</LangVersion>
+		<Nullable>disable</Nullable>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<EnableDefaultCompileItems>true</EnableDefaultCompileItems>
+		<!-- The GameMaker IDE is a 64-bit process; match its architecture so the
+		     WindowsBase (and other IDE) references align and MSB3270 is avoided. -->
+		<PlatformTarget>x64</PlatformTarget>
+	</PropertyGroup>
+
+	<!-- Path to a GameMaker install that contains the IDE assemblies.
+       Override with: dotnet build -p:GMDir="C:\Program Files\GameMaker" -->
+	<PropertyGroup>
+		<GMDir Condition="'$(GMDir)' == ''">C:\Program Files (x86)\Steam\steamapps\common\GameMaker Studio 2</GMDir>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<Reference Include="IDE">
+			<HintPath>$(GMDir)/IDE.dll</HintPath>
+		</Reference>
+		<Reference Include="CorePlugins">
+			<HintPath>$(GMDir)/CorePlugins.dll</HintPath>
+		</Reference>
+		<Reference Include="Utils">
+			<HintPath>$(GMDir)/Utils.dll</HintPath>
+		</Reference>
+		<Reference Include="CoreResources">
+			<HintPath>$(GMDir)/CoreResources.dll</HintPath>
+		</Reference>
+		<Reference Include="Alice">
+			<HintPath>$(GMDir)/Alice.dll</HintPath>
+		</Reference>
+		<Reference Include="Graphics">
+			<HintPath>$(GMDir)/Graphics.dll</HintPath>
+		</Reference>
+		<Reference Include="OSCore">
+			<HintPath>$(GMDir)/OSCore.dll</HintPath>
+		</Reference>
+		<Reference Include="Debugger">
+			<HintPath>$(GMDir)/Debugger.dll</HintPath>
+		</Reference>
+		<Reference Include="DebugInfo">
+			<HintPath>$(GMDir)/DebugInfo.dll</HintPath>
+		</Reference>
+		<!-- GameMaker ships WindowsBase 8.0.0.0; reference it explicitly so the
+		     resolver unifies on it instead of warning MSB3277 against the
+		     net8.0 ref pack (4.0.0.0) and VS.Threading (6.0.2.0). -->
+		<Reference Include="WindowsBase">
+			<HintPath>$(GMDir)/WindowsBase.dll</HintPath>
+		</Reference>
+		<Reference Include="ErrorParsing">
+			<HintPath>$(GMDir)/ErrorParsing.dll</HintPath>
+		</Reference>
+		<Reference Include="FileIO">
+			<HintPath>$(GMDir)/FileIO.dll</HintPath>
+		</Reference>
+	</ItemGroup>
+
+	<ItemGroup>
+	</ItemGroup>
+
+	<!-- =====================================================================
+       Automatic build + signing.
+
+       `dotnet build` (this project or the solution) produces a clean dist/
+       folder with exactly four files:
+         dist/DebuggerDump.dll
+         dist/DebuggerDump.json          (the manifest)
+         dist/DebuggerDump.gmplugin      (signed manifest)
+         dist/DebuggerDumpLayout.xml     (toolbar layout)
+
+       The PluginSigner console app computes the assembly checksum, generates
+       (or reuses) an RSA-2048 key and writes the signature the GameMaker IDE
+       verifies. Pass -p:GmPluginKey=path\to\private.pem to reuse a key;
+       otherwise a fresh key is generated on every build.
+
+       PluginSigner is built on demand inside the SignGmPlugin target (no
+       ProjectReference) so its apphost/deps/runtimeconfig are never copied
+       into this project's output, which otherwise fails with MSB3030.
+       ===================================================================== -->
+	<PropertyGroup>
+		<DistDir>$(MSBuildProjectDirectory)/../dist</DistDir>
+		<ManifestTemplate>$(MSBuildProjectDirectory)/DebuggerDump.json</ManifestTemplate>
+		<SignerProject>$(MSBuildProjectDirectory)/../PluginSigner/PluginSigner.csproj</SignerProject>
+		<SignerDll>$(MSBuildProjectDirectory)/../PluginSigner/bin/$(Configuration)/net8.0/PluginSigner.dll</SignerDll>
+	</PropertyGroup>
+
+	<Target Name="SignGmPlugin" AfterTargets="Build">
+		<MSBuild Projects="$(SignerProject)" Targets="Restore;Build" Properties="Configuration=$(Configuration)" />
+		<ItemGroup>
+			<_DistFiles Include="$(DistDir)/**/*" />
+		</ItemGroup>
+		<RemoveDir Directories="$(DistDir)" />
+		<MakeDir Directories="$(DistDir)" />
+		<Copy SourceFiles="$(TargetPath)" DestinationFolder="$(DistDir)" />
+		<Copy SourceFiles="$(ManifestTemplate)" DestinationFiles="$(DistDir)/$(TargetName).json" />
+		<Exec Command="dotnet &quot;$(SignerDll)&quot; --manifest &quot;$(DistDir)/$(TargetName).json&quot; --dll &quot;$(DistDir)/$(TargetName).dll&quot; --out &quot;$(DistDir)/$(TargetName).gmplugin&quot; --key &quot;$(GmPluginKey)&quot;" />
+		<Delete Files="$(DistDir)/$(TargetName).json" />
+	</Target>
+
+	<!-- Copy the signed plugin (dll + gmplugin) to the GameMaker
+	     IDE plugin directory so it is picked up on the next IDE start.
+	     If the IDE is running it locks DebuggerDump.dll, so removal/copy
+	     are best-effort: the build still succeeds and warns instead of
+	     failing; close the IDE and rebuild to actually redeploy. -->
+	<PropertyGroup>
+		<PluginDeployDir Condition="'$(PluginDeployDir)' == ''">C:\ProgramData\GameMakerStudio2-LTS2026\Plugins\DebuggerDump</PluginDeployDir>
+	</PropertyGroup>
+
+	<Target Name="DeployGmPlugin" AfterTargets="SignGmPlugin">
+		<ItemGroup>
+			<_DeployFiles Include="$(DistDir)/**/*" />
+		</ItemGroup>
+		<RemoveDir Directories="$(PluginDeployDir)" ContinueOnError="true" />
+		<MakeDir Directories="$(PluginDeployDir)" />
+		<Copy SourceFiles="@(_DeployFiles)" DestinationFolder="$(PluginDeployDir)" ContinueOnError="true" />
+	</Target>
+</Project>

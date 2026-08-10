@@ -1,0 +1,27 @@
+{
+  "name": "DebuggerDump",
+  "bundle_version": "0.0.1",
+  "bundle_description": "Export profiling data collected by the Debugger to CSV and JSON.",
+  "required": false,
+  "feature_flag": null,
+  "plugins": [
+    {
+      "plugin_name": "DebuggerDump",
+      "localised_name": null,
+      "plugin_version": "0.0.1",
+      "type": "System",
+      "plugin_data": null,
+      "description": "Adds Export CSV and Export JSON entries to the Debugger menu for saving profiling data.",
+      "required_assemblies": [
+        {
+          "assembly_name": "DebuggerDump",
+          "version": "0.0.1",
+          "path": "DebuggerDump.dll",
+          "checksum": null
+        }
+      ],
+      "dependencies": []
+    }
+  ],
+  "author": "DamirLut"
+}
