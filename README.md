@@ -18,7 +18,7 @@ GameMaker IDE plugin for exporting profiling data collected by the Debugger.
 ## Installation
 
 1. Open the Package Manager found in **Tools → Package Manager**.
-2. Add the RGD registry: name `RGD Plugins`, URL `https://gmpm.rgd.chat/`.
+2. Add the RGD registry: any name, URL `https://gmpm.damirlut.dev/`.
 3. Install **DebuggerDump** and enable it.
 4. Restart GameMaker.
 
